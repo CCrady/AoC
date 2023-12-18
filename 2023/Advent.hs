@@ -1,4 +1,4 @@
-module Advent (puzzleInput, dropPrefix, splitFirst, split) where
+module Advent (puzzleInput, puzzleInputTest, dropPrefix, splitFirst, split) where
 import System.IO
 import Data.List
 
@@ -9,6 +9,14 @@ puzzleInput num func = do
     file <- openFile fileName ReadMode
     contents <- hGetContents file
     putStrLn $ show $ func contents
+    hClose file
+
+puzzleInputTest :: String -> (String -> IO ()) -> IO ()
+puzzleInputTest num func = do
+    let fileName = "test_" ++ num ++ ".txt"
+    file <- openFile fileName ReadMode
+    contents <- hGetContents file
+    func contents
     hClose file
 
 
