@@ -1,6 +1,19 @@
-module Advent (puzzleInput, puzzleInputTest, dropPrefix, splitFirst, split) where
+module Advent
+( puzzleInput
+, puzzleInputTest
+, dropPrefix
+, splitFirst
+, split
+, Index
+, Matrix
+, parseMatrix
+, rows
+, cols
+) where
+
 import System.IO
 import Data.List
+import Data.Array
 
 
 puzzleInput :: Show a => String -> (String -> a) -> IO ()
@@ -48,4 +61,28 @@ split delim str = case splitFirst delim str of
         Nothing          -> [str]
         Just (pfx, rest) -> pfx : split delim rest
 
+
+type Index = (Int, Int)
+type Matrix a = Array Index a
+
+parseMatrix :: (Char -> a) -> String -> Matrix a
+parseMatrix f str = let
+    charGrid = lines str
+    width = length $ head charGrid
+    height = length charGrid
+    assocs = [((x, y), f char) | (y, line) <- zip [1..] charGrid,
+                                 (x, char) <- zip [1..] line]
+    in array ((1, 1), (width, height)) assocs
+
+rows :: Matrix a -> [[a]]
+rows m = let
+    (_, (width, height)) = bounds m
+    in [[m ! (x, y) | x <- [1..width]]
+                    | y <- [1..height]]
+
+cols :: Matrix a -> [[a]]
+cols m = let
+    (_, (width, height)) = bounds m
+    in [[m ! (x, y) | y <- [1..height]]
+                    | x <- [1..width]]
 
