@@ -9,6 +9,12 @@ module Advent
 , parseMatrix
 , rows
 , cols
+, Direction (..)
+, nudge
+, invert
+, turnCW
+, turnCCW
+, inBounds
 ) where
 
 import System.IO
@@ -85,4 +91,34 @@ cols m = let
     (_, (width, height)) = bounds m
     in [[m ! (x, y) | y <- [1..height]]
                     | x <- [1..width]]
+
+data Direction = North | South | East | West deriving (Eq, Ord)
+
+nudge :: Direction -> Index -> Index
+nudge North (x, y) = (x, y - 1)
+nudge South (x, y) = (x, y + 1)
+nudge East  (x, y) = (x + 1, y)
+nudge West  (x, y) = (x - 1, y)
+
+invert :: Direction -> Direction
+invert North = South
+invert South = North
+invert East  = West
+invert West  = East
+
+turnCW :: Direction -> Direction
+turnCW North = East
+turnCW East  = South
+turnCW South = West
+turnCW West  = North
+
+turnCCW :: Direction -> Direction
+turnCCW North = West
+turnCCW West  = South
+turnCCW South = East
+turnCCW East  = North
+
+inBounds :: (Index, Index) -> Index -> Bool
+inBounds ((xLo, yLo), (xHi, yHi)) (x, y) = xLo <= x && x <= xHi
+                                        && yLo <= y && y <= yHi
 
