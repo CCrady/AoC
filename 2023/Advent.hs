@@ -10,6 +10,7 @@ module Advent
 , rows
 , cols
 , Direction (..)
+, shift
 , nudge
 , invert
 , turnCW
@@ -92,13 +93,16 @@ cols m = let
     in [[m ! (x, y) | y <- [1..height]]
                     | x <- [1..width]]
 
-data Direction = North | South | East | West deriving (Eq, Ord)
+data Direction = North | South | East | West deriving (Show, Eq, Ord)
+
+shift :: Direction -> Int -> Index -> Index
+shift North d (x, y) = (x, y - d)
+shift South d (x, y) = (x, y + d)
+shift East  d (x, y) = (x + d, y)
+shift West  d (x, y) = (x - d, y)
 
 nudge :: Direction -> Index -> Index
-nudge North (x, y) = (x, y - 1)
-nudge South (x, y) = (x, y + 1)
-nudge East  (x, y) = (x + 1, y)
-nudge West  (x, y) = (x - 1, y)
+nudge = flip shift 1
 
 invert :: Direction -> Direction
 invert North = South
