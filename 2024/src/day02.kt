@@ -1,9 +1,7 @@
 import java.io.File
 import kotlin.math.abs
 
-fun main() {
-    solve("02", ::parse, ::part1, ::part2)
-}
+fun main() = solve("02", ::parse, ::part1, ::part2)
 
 private fun parse(file: File): List<List<Int>> {
     return file.readLines().map { line ->
