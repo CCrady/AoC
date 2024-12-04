@@ -23,7 +23,6 @@ data class Vec2(val x: Int, val y: Int) {
     operator fun plus(other: Vec2): Vec2 = Vec2(x + other.x, y + other.y)
     operator fun minus(other: Vec2): Vec2 = Vec2(x - other.x, y - other.y)
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
-    override fun equals(other: Any?): Boolean = other is Vec2 && x == other.x && y == other.y
 
     enum class Direction(val vector: Vec2) {
         EAST(Vec2(1, 0)),
@@ -42,9 +41,11 @@ class Matrix<E>(private val underlying: List<List<E>>) {
         get() = underlying.first().size
     val height: Int
         get() = underlying.size
+    val bounds: Vec2
+        get() = Vec2(width, height)
     fun at(x: Int, y: Int): E = underlying[y][x]
     fun at(pos: Vec2): E = at(pos.x, pos.y)
-    fun inBounds(x: Int, y: Int): Boolean = y >= 0 && x >= 0 && y < underlying.size && x < underlying[y].size
+    fun inBounds(x: Int, y: Int): Boolean = y >= 0 && x >= 0 && y < height && x < width
     fun inBounds(pos: Vec2): Boolean = inBounds(pos.x, pos.y)
 
     data class IndexedValue<T>(val index: Vec2, val value: T)
@@ -52,6 +53,13 @@ class Matrix<E>(private val underlying: List<List<E>>) {
     constructor(from: Iterable<Iterable<E>>) : this(from.map { row -> row.toList() }.toList())
 
     fun <T> map(f: (E) -> T): Matrix<T> = Matrix(underlying.map { row -> row.map(f) })
+    fun <T> mapIndexed(f: (Vec2, E) -> T): Matrix<T> = Matrix(
+        underlying.mapIndexed { y, row ->
+            row.mapIndexed { x, element ->
+                f(Vec2(x, y), element)
+            }
+        }
+    )
 
     fun toSequence(): Sequence<IndexedValue<E>> = sequence {
         for ((y, row) in underlying.withIndex()) {

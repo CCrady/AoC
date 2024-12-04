@@ -1,5 +1,4 @@
 import java.io.File
-import kotlin.math.abs
 
 fun main() = solve("02", ::parse, ::part1, ::part2)
 
