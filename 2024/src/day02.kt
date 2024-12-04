@@ -21,12 +21,10 @@ private fun part2(input: List<List<Int>>): Int {
 
 private fun isSafe(report: List<Int>): Boolean {
     val shouldIncrease = report[0] < report[1]
-    for (i in 0..<(report.size - 1)) {
-        val difference = report[i+1] - report[i]
-        if (abs(difference) !in 1..3) return false
-        if (shouldIncrease xor (difference > 0)) return false
+    val acceptableRange = if (shouldIncrease) 1..3 else -3..-1
+    return report.zipWithNext().all { (left, right) ->
+        right - left in acceptableRange
     }
-    return true
 }
 
 private fun isSafeWithDampener(report: List<Int>): Boolean {
