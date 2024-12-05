@@ -16,6 +16,10 @@ module Advent
 , turnCW
 , turnCCW
 , inBounds
+, OrderOn (..)
+, orderWrap
+, orderUnwrap
+, orderOn
 ) where
 
 import System.IO
@@ -93,7 +97,7 @@ cols m = let
     in [[m ! (x, y) | y <- [1..height]]
                     | x <- [1..width]]
 
-data Direction = North | South | East | West deriving (Show, Eq, Ord)
+data Direction = North | South | East | West deriving (Show, Eq, Ord, Ix)
 
 shift :: Direction -> Int -> Index -> Index
 shift North d (x, y) = (x, y - d)
@@ -125,4 +129,17 @@ turnCCW East  = North
 inBounds :: (Index, Index) -> Index -> Bool
 inBounds ((xLo, yLo), (xHi, yHi)) (x, y) = xLo <= x && x <= xHi
                                         && yLo <= y && y <= yHi
+
+
+data OrderOn i a = OrderOn i a
+instance Eq i => Eq (OrderOn i a) where
+    (OrderOn i1 _) == (OrderOn i2 _) = i1 == i2
+instance Ord i => Ord (OrderOn i a) where
+    compare (OrderOn i1 _) (OrderOn i2 _) = compare i1 i2
+
+orderWrap f x = OrderOn (f x) x
+orderUnwrap (OrderOn _ x) = x
+
+orderOn :: Ord i => (a -> i) -> ([OrderOn i a] -> OrderOn i a) -> [a] -> a
+orderOn wrap f = orderUnwrap . f . map (\x -> OrderOn (wrap x) x)
 
