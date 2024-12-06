@@ -1,4 +1,5 @@
 import java.io.File
+import kotlin.math.abs
 
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Int)? = null, part2: ((T) -> Int)? = null) {
     val testData = parse(File("test_input/$day.txt"))
@@ -18,12 +19,18 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Int)? = null, part
 }
 
 data class Vec2(val x: Int, val y: Int) {
+    // magnitude of the vector, using the manhattan distance
+    val mag: Int
+        get() = abs(x) + abs(y)
+
     operator fun unaryPlus(): Vec2 = this
     operator fun unaryMinus(): Vec2 = Vec2(-x, -y)
     operator fun plus(other: Vec2): Vec2 = Vec2(x + other.x, y + other.y)
     operator fun plus(other: MooreDirection): Vec2 = this + other.vector
     operator fun plus(other: CardinalDirection): Vec2 = this + other.vector
     operator fun minus(other: Vec2): Vec2 = Vec2(x - other.x, y - other.y)
+    operator fun minus(other: MooreDirection): Vec2 = this - other.vector
+    operator fun minus(other: CardinalDirection): Vec2 = this - other.vector
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
 
     enum class MooreDirection(val vector: Vec2) {
@@ -43,18 +50,27 @@ data class Vec2(val x: Int, val y: Int) {
         WEST(Vec2(-1, 0)),
         NORTH(Vec2(0, -1));
 
-        fun turnCW(): CardinalDirection = when (this) {
-            EAST -> SOUTH
-            SOUTH -> WEST
-            WEST -> NORTH
-            NORTH -> EAST
-        }
-        fun turnCCW(): CardinalDirection = when (this) {
-            EAST -> NORTH
-            SOUTH -> EAST
-            WEST -> SOUTH
-            NORTH -> WEST
-        }
+        val turnCW: CardinalDirection
+            get() = when (this) {
+                EAST -> SOUTH
+                SOUTH -> WEST
+                WEST -> NORTH
+                NORTH -> EAST
+            }
+        val turnCCW: CardinalDirection
+            get() = when (this) {
+                EAST -> NORTH
+                SOUTH -> EAST
+                WEST -> SOUTH
+                NORTH -> WEST
+            }
+        val reverse: CardinalDirection
+            get() = when (this) {
+                EAST  -> WEST
+                SOUTH -> NORTH
+                WEST  -> EAST
+                NORTH -> SOUTH
+            }
     }
 }
 
