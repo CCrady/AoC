@@ -21,10 +21,12 @@ data class Vec2(val x: Int, val y: Int) {
     operator fun unaryPlus(): Vec2 = this
     operator fun unaryMinus(): Vec2 = Vec2(-x, -y)
     operator fun plus(other: Vec2): Vec2 = Vec2(x + other.x, y + other.y)
+    operator fun plus(other: MooreDirection): Vec2 = this + other.vector
+    operator fun plus(other: CardinalDirection): Vec2 = this + other.vector
     operator fun minus(other: Vec2): Vec2 = Vec2(x - other.x, y - other.y)
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
 
-    enum class Direction(val vector: Vec2) {
+    enum class MooreDirection(val vector: Vec2) {
         EAST(Vec2(1, 0)),
         SOUTHEAST(Vec2(1, 1)),
         SOUTH(Vec2(0, 1)),
@@ -34,32 +36,54 @@ data class Vec2(val x: Int, val y: Int) {
         NORTH(Vec2(0, -1)),
         NORTHEAST(Vec2(1, -1))
     }
+    
+    enum class CardinalDirection(val vector: Vec2) {
+        EAST(Vec2(1, 0)),
+        SOUTH(Vec2(0, 1)),
+        WEST(Vec2(-1, 0)),
+        NORTH(Vec2(0, -1));
+
+        fun turnCW(): CardinalDirection = when (this) {
+            EAST -> SOUTH
+            SOUTH -> WEST
+            WEST -> NORTH
+            NORTH -> EAST
+        }
+        fun turnCCW(): CardinalDirection = when (this) {
+            EAST -> NORTH
+            SOUTH -> EAST
+            WEST -> SOUTH
+            NORTH -> WEST
+        }
+    }
 }
 
-class Matrix<E>(private val underlying: List<List<E>>) {
+open class Matrix<E>(private val underlying: List<List<E>>) {
     val width: Int
         get() = underlying.first().size
     val height: Int
         get() = underlying.size
-    val bounds: Vec2
+    val size: Vec2
         get() = Vec2(width, height)
-    fun at(x: Int, y: Int): E = underlying[y][x]
-    fun at(pos: Vec2): E = at(pos.x, pos.y)
     fun inBounds(x: Int, y: Int): Boolean = y >= 0 && x >= 0 && y < height && x < width
     fun inBounds(pos: Vec2): Boolean = inBounds(pos.x, pos.y)
 
-    data class IndexedValue<T>(val index: Vec2, val value: T)
+    operator fun get(x: Int, y: Int): E = underlying[y][x]
+    operator fun get(pos: Vec2): E = get(pos.x, pos.y)
 
-    constructor(from: Iterable<Iterable<E>>) : this(from.map { row -> row.toList() }.toList())
-
-    fun <T> map(f: (E) -> T): Matrix<T> = Matrix(underlying.map { row -> row.map(f) })
-    fun <T> mapIndexed(f: (Vec2, E) -> T): Matrix<T> = Matrix(
-        underlying.mapIndexed { y, row ->
-            row.mapIndexed { x, element ->
-                f(Vec2(x, y), element)
+    constructor(size: Vec2, init: (Vec2) -> E) : this(
+        List(size.y) { y ->
+            List(size.x) { x ->
+                init(Vec2(x, y))
             }
         }
     )
+    constructor(lines: List<String>, transform: (Vec2, Char) -> E): this(
+        Vec2(lines.first().length, lines.size),
+        { pos -> transform(pos, lines[pos.y][pos.x]) }
+    )
+
+    data class IndexedValue<T>(val index: Vec2, val value: T)
 
     fun toSequence(): Sequence<IndexedValue<E>> = sequence {
         for ((y, row) in underlying.withIndex()) {
@@ -68,6 +92,35 @@ class Matrix<E>(private val underlying: List<List<E>>) {
             }
         }
     }
-
     operator fun iterator(): Iterator<IndexedValue<E>> = toSequence().iterator()
+
+    fun count(predicate: (E) -> Boolean) = underlying.sumOf { row -> row.count(predicate) }
+}
+
+class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Matrix<E>(underlying) {
+    operator fun set(x: Int, y: Int, value: E) {
+        underlying[y][x] = value
+    }
+    operator fun set(pos: Vec2, value: E) = set(pos.x, pos.y, value)
+
+    constructor(size: Vec2, init: (Vec2) -> E): this(
+        MutableList(size.y) { y ->
+            MutableList(size.x) { x ->
+                init(Vec2(x, y))
+            }
+        }
+    )
+    constructor(lines: List<String>, transform: (Vec2, Char) -> E): this(
+        Vec2(lines.first().length, lines.size),
+        { pos -> transform(pos, lines[pos.y][pos.x])}
+    )
+
+    fun mapInPlace(transform: (Vec2, E) -> E): MutableMatrix<E> {
+        for ((y, row) in underlying.withIndex()) {
+            for (x in row.indices) {
+                row[x] = transform(Vec2(x, y), row[x])
+            }
+        }
+        return this
+    }
 }

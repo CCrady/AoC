@@ -3,7 +3,7 @@ import java.io.File
 fun main() = solve("05", ::parse, ::part1, ::part2)
 
 @JvmInline
-value class OrderRules(private val underlying: Map<Int, Set<Int>>): Comparator<Int> {
+private value class OrderRules(private val underlying: Map<Int, Set<Int>>): Comparator<Int> {
     // underlying maps a page number to the set of page numbers that must come after it
 
     fun isInOrder(before: Int, after: Int): Boolean = after in underlying.getValue(before)
@@ -20,7 +20,7 @@ value class OrderRules(private val underlying: Map<Int, Set<Int>>): Comparator<I
 
     override fun compare(lhs: Int, rhs: Int): Int = if (isInOrder(lhs, rhs)) -1 else 1
 }
-typealias PageOrder = List<Int>
+private typealias PageOrder = List<Int>
 
 private fun parse(file: File): Pair<OrderRules, List<PageOrder>> {
     val lines = file.readLines()
