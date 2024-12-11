@@ -1,7 +1,7 @@
 import java.io.File
 import kotlin.math.abs
 
-fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Int)? = null, part2: ((T) -> Int)? = null) {
+fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, part2: ((T) -> Number)? = null) {
     val testData = parse(File("test_input/$day.txt"))
     val inputData = parse(File("input/$day.txt"))
     if (part1 != null) {
