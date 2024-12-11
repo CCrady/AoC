@@ -33,6 +33,12 @@ data class Vec2(val x: Int, val y: Int) {
     operator fun minus(other: CardinalDirection): Vec2 = this - other.vector
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
 
+    fun inBounds(min: Vec2, max: Vec2): Boolean = x in min.x..<max.x && y in min.y..<max.y
+
+    companion object {
+        val ZERO = Vec2(0, 0)
+    }
+
     enum class MooreDirection(val vector: Vec2) {
         EAST(Vec2(1, 0)),
         SOUTHEAST(Vec2(1, 1)),
