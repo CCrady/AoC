@@ -92,6 +92,8 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
 
     operator fun get(x: Int, y: Int): E = underlying[y][x]
     operator fun get(pos: Vec2): E = get(pos.x, pos.y)
+    fun getOrDefault(x: Int, y: Int, default: E): E = if (inBounds(x, y)) this[x, y] else default
+    fun getOrDefault(pos: Vec2, default: E): E = getOrDefault(pos.x, pos.y, default)
 
     constructor(size: Vec2, init: (Vec2) -> E) : this(
         List(size.y) { y ->
@@ -117,6 +119,12 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
     operator fun iterator(): Iterator<IndexedValue<E>> = toSequence().iterator()
 
     fun count(predicate: (E) -> Boolean) = underlying.sumOf { row -> row.count(predicate) }
+
+    fun toMutable(): MutableMatrix<E> {
+        return MutableMatrix(underlying.map { row ->
+            row.toMutableList()
+        }.toMutableList())
+    }
 }
 
 class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Matrix<E>(underlying) {
@@ -146,3 +154,38 @@ class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Mat
         return this
     }
 }
+
+data class Multiset<E>(private val underlying: Map<E, Int>) {
+    val size: Int
+        get() = underlying.values.sum()
+    val entries: Set<Map.Entry<E, Int>>
+        get() = underlying.entries
+    operator fun get(el: E) = underlying[el]
+    fun contains(el: E) = underlying.containsKey(el)
+
+    fun toSet(): Set<E> = underlying.keys
+
+    constructor(): this(mapOf<E, Int>().withDefault { 0 })
+    constructor(from: Sequence<E>): this(
+        mutableMapOf<E, Int>().withDefault { 0 }.also { underlying ->
+            for (el in from) {
+                underlying[el] = underlying.getValue(el) + 1
+            }
+        }
+    )
+    constructor(from: Iterable<E>): this(from.asSequence())
+
+    fun <R> multiMap(transform: (E) -> Iterable<R>): Multiset<R> {
+        val newUnderlying = mutableMapOf<R, Int>().withDefault { 0 }
+        for ((preimage, num) in underlying) {
+            for (image in transform(preimage)) {
+                newUnderlying[image] = newUnderlying.getValue(image) + num
+            }
+        }
+        return Multiset(newUnderlying)
+    }
+}
+
+fun <E> Sequence<E>.toMultiset(): Multiset<E> = Multiset(this)
+fun <E> Iterable<E>.toMultiset(): Multiset<E> = Multiset(this)
+fun <E> Set<E>.toMultiset(): Multiset<E> = Multiset(this.associateWith { 1 }.withDefault { 0 })
