@@ -1,5 +1,9 @@
 import java.io.File
+import java.math.BigInteger
 import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.roundToInt
 
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, part2: ((T) -> Number)? = null) {
     val testData = parse(File("test_input/$day.txt"))
@@ -17,6 +21,8 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, p
         """.trimIndent())
     }
 }
+
+fun numDigits(n: Number): Int = (log10(n.toDouble()) + 1.0).toInt()
 
 fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     return this.fold(mutableSetOf()) { acc, el ->
@@ -162,28 +168,28 @@ class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Mat
     }
 }
 
-data class Multiset<E>(private val underlying: Map<E, Int>) {
-    val size: Int
-        get() = underlying.values.sum()
-    val entries: Set<Map.Entry<E, Int>>
+data class Multiset<E>(private val underlying: Map<E, BigInteger>) {
+    val size: BigInteger
+        get() = underlying.values.fold(BigInteger.ZERO, BigInteger::plus)
+    val entries: Set<Map.Entry<E, BigInteger>>
         get() = underlying.entries
     operator fun get(el: E) = underlying[el]
     fun contains(el: E) = underlying.containsKey(el)
 
     fun toSet(): Set<E> = underlying.keys
 
-    constructor(): this(mapOf<E, Int>().withDefault { 0 })
+    constructor(): this(mapOf<E, BigInteger>().withDefault { BigInteger.ZERO })
     constructor(from: Sequence<E>): this(
-        mutableMapOf<E, Int>().withDefault { 0 }.also { underlying ->
+        mutableMapOf<E, BigInteger>().withDefault { BigInteger.ZERO }.also { underlying ->
             for (el in from) {
-                underlying[el] = underlying.getValue(el) + 1
+                underlying[el] = underlying.getValue(el) + BigInteger.ONE
             }
         }
     )
     constructor(from: Iterable<E>): this(from.asSequence())
 
     fun <R> multiMap(transform: (E) -> Iterable<R>): Multiset<R> {
-        val newUnderlying = mutableMapOf<R, Int>().withDefault { 0 }
+        val newUnderlying = mutableMapOf<R, BigInteger>().withDefault { BigInteger.ZERO }
         for ((preimage, num) in underlying) {
             for (image in transform(preimage)) {
                 newUnderlying[image] = newUnderlying.getValue(image) + num
@@ -195,4 +201,6 @@ data class Multiset<E>(private val underlying: Map<E, Int>) {
 
 fun <E> Sequence<E>.toMultiset(): Multiset<E> = Multiset(this)
 fun <E> Iterable<E>.toMultiset(): Multiset<E> = Multiset(this)
-fun <E> Set<E>.toMultiset(): Multiset<E> = Multiset(this.associateWith { 1 }.withDefault { 0 })
+fun <E> Set<E>.toMultiset(): Multiset<E> = Multiset(
+    this.associateWith { BigInteger.ONE }.withDefault { BigInteger.ZERO }
+)

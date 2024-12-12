@@ -1,4 +1,5 @@
 import java.io.File
+import java.math.BigInteger
 
 fun main() = solve("10", ::parse, ::part1, ::part2)
 
@@ -31,7 +32,7 @@ private fun nextFrontier(atlas: Matrix<Int>, currFrontier: Set<Vec2>, nextHeight
     }
 }
 
-private fun part2(atlas: Matrix<Int>): Int {
+private fun part2(atlas: Matrix<Int>): BigInteger {
     val summits = atlas.toSequence().filter { (_, height) ->
         height == 9
     }.map { (pos, _) ->

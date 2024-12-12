@@ -54,7 +54,7 @@ private fun exactDivision(numerator: Long, denominator: Long): Long {
 // this will throw if suffix <= 0
 private fun removeSuffix(n: Long, suffix: Long): Long {
     // the power of 10 at which to break the number
-    val digitBreak = 10.0.pow(floor(log10(suffix.toDouble()) + 1.0)).roundToLong()
+    val digitBreak = 10.0.pow(numDigits(suffix)).roundToLong()
     if (n % digitBreak != suffix) return -1
     return n / digitBreak
 }
