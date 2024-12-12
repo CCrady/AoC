@@ -2,19 +2,19 @@ import java.io.File
 
 fun main() = solve("08", ::parse, ::part1, ::part2)
 
-private data class Input(val atlas: Map<Char, Set<Vec2>>, val bounds: Vec2)
+private data class Input08(val atlas: Map<Char, Set<Vec2>>, val bounds: Vec2)
 
-private fun parse(file: File): Input {
+private fun parse(file: File): Input08 {
     val map = mutableMapOf<Char, MutableSet<Vec2>>().withDefault { mutableSetOf() }
     val matrix = Matrix(file.readLines()) { _, c -> c }
     for ((pos, char) in matrix) {
         if (char == '.') continue
         map[char] = map.getValue(char).also { set -> set.add(pos) }
     }
-    return Input(map, matrix.size)
+    return Input08(map, matrix.size)
 }
 
-private fun part1(input: Input): Int {
+private fun part1(input: Input08): Int {
     val (atlas, bounds) = input
     return atlas.values.asSequence().flatMap { locations ->
         locations.distinctPairs().map { (pos1, pos2) ->
@@ -25,7 +25,7 @@ private fun part1(input: Input): Int {
     }.toSet().size
 }
 
-private fun part2(input: Input): Int {
+private fun part2(input: Input08): Int {
     val (atlas, bounds) = input
     return atlas.values.asSequence().flatMap { locations ->
         locations.distinctPairs().flatMap { (pos1, pos2) ->

@@ -35,7 +35,7 @@ private fun part2(input: List<TestCase>): Long {
     }.sumOf { (target, _) -> target }
 }
 
-fun recursiveSearch2(target: Long, operands: List<Long>): Boolean {
+private fun recursiveSearch2(target: Long, operands: List<Long>): Boolean {
     if (target <= 0) return false
     if (operands.size == 1) return target == operands.first()
     val currOperand = operands.last()
@@ -45,14 +45,14 @@ fun recursiveSearch2(target: Long, operands: List<Long>): Boolean {
             || recursiveSearch2(removeSuffix(target, currOperand), restOperands)
 }
 
-fun exactDivision(numerator: Long, denominator: Long): Long {
+private fun exactDivision(numerator: Long, denominator: Long): Long {
     if (numerator % denominator != 0L) return -1
     return numerator / denominator
 }
 
 // remove the last (base 10) digits of n if they match suffix; otherwise return -1
 // this will throw if suffix <= 0
-fun removeSuffix(n: Long, suffix: Long): Long {
+private fun removeSuffix(n: Long, suffix: Long): Long {
     // the power of 10 at which to break the number
     val digitBreak = 10.0.pow(floor(log10(suffix.toDouble()) + 1.0)).roundToLong()
     if (n % digitBreak != suffix) return -1

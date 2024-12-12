@@ -18,6 +18,13 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, p
     }
 }
 
+fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
+    return this.fold(mutableSetOf()) { acc, el ->
+        acc.addAll(transform(el))
+        acc
+    }
+}
+
 data class Vec2(val x: Int, val y: Int) {
     // magnitude of the vector, using the manhattan distance
     val mag: Int

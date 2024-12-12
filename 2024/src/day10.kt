@@ -22,19 +22,12 @@ private fun part1(atlas: Matrix<Int>): Int {
 }
 
 private fun nextFrontier(atlas: Matrix<Int>, currFrontier: Set<Vec2>, nextHeight: Int): Set<Vec2> {
-    return currFrontier.flatMap { currPos ->
+    return currFrontier.flatSetMap { currPos ->
         Vec2.CardinalDirection.entries.map { dir ->
             currPos + dir
         }.filter { nextPos ->
             atlas.inBounds(nextPos) && atlas[nextPos] == nextHeight
         }
-    }
-}
-
-private fun <T, R> Set<T>.flatMap(transform: (T) -> Collection<R>): Set<R> {
-    return this.fold(mutableSetOf()) { acc, el ->
-        acc.addAll(transform(el))
-        acc
     }
 }
 
