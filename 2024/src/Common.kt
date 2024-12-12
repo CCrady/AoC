@@ -1,9 +1,7 @@
 import java.io.File
 import java.math.BigInteger
 import kotlin.math.abs
-import kotlin.math.floor
 import kotlin.math.log10
-import kotlin.math.roundToInt
 
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, part2: ((T) -> Number)? = null) {
     val testData = parse(File("test_input/$day.txt"))
