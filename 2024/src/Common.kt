@@ -22,6 +22,9 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, p
 
 fun numDigits(n: Number): Int = (log10(n.toDouble()) + 1.0).toInt()
 
+tailrec fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
+tailrec fun gcd(a: BigInteger, b: BigInteger): BigInteger = if (b == BigInteger.ZERO) a else gcd(b, a % b)
+
 fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     return this.fold(mutableSetOf()) { acc, el ->
         acc.addAll(transform(el))
@@ -91,6 +94,22 @@ data class Vec2(val x: Int, val y: Int) {
     }
 }
 
+// Kotlin's OO-style parametric polymorphism means we have to duplicate the Vec2 code here :(
+data class BigVec2(val x: BigInteger, val y: BigInteger) {
+    operator fun unaryPlus(): BigVec2 = this
+    operator fun unaryMinus(): BigVec2 = BigVec2(-x, -y)
+    operator fun plus(other: BigVec2): BigVec2 = BigVec2(x + other.x, y + other.y)
+    operator fun minus(other: BigVec2): BigVec2 = BigVec2(x - other.x, y - other.y)
+    operator fun times(other: BigInteger): BigVec2 = BigVec2(x * other, y * other)
+
+    fun isParallelTo(other: BigVec2): Boolean {
+        val commonXDivisor = gcd(this.x, other.x)
+        val commonYDivisor = gcd(this.y, other.y)
+        return this.x / commonXDivisor == this.y / commonYDivisor
+                && other.x / commonXDivisor == other.y / commonYDivisor
+    }
+}
+
 open class Matrix<E>(private val underlying: List<List<E>>) {
     val width: Int
         get() = underlying.first().size
@@ -151,10 +170,6 @@ class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Mat
             }
         }
     )
-    constructor(lines: List<String>, transform: (Vec2, Char) -> E): this(
-        Vec2(lines.first().length, lines.size),
-        { pos -> transform(pos, lines[pos.y][pos.x])}
-    )
 
     fun mapInPlace(transform: (Vec2, E) -> E): MutableMatrix<E> {
         for ((y, row) in underlying.withIndex()) {
@@ -166,13 +181,14 @@ class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Mat
     }
 }
 
-data class Multiset<E>(private val underlying: Map<E, BigInteger>) {
+@JvmInline
+value class Multiset<E>(private val underlying: Map<E, BigInteger>) {
     val size: BigInteger
         get() = underlying.values.fold(BigInteger.ZERO, BigInteger::plus)
     val entries: Set<Map.Entry<E, BigInteger>>
         get() = underlying.entries
     operator fun get(el: E) = underlying[el]
-    fun contains(el: E) = underlying.containsKey(el)
+    operator fun contains(el: E) = underlying.containsKey(el)
 
     fun toSet(): Set<E> = underlying.keys
 
@@ -186,6 +202,7 @@ data class Multiset<E>(private val underlying: Map<E, BigInteger>) {
     )
     constructor(from: Iterable<E>): this(from.asSequence())
 
+    // this is the flatmap of the multiset monad, but the name "flatMap" is already in use
     fun <R> multiMap(transform: (E) -> Iterable<R>): Multiset<R> {
         val newUnderlying = mutableMapOf<R, BigInteger>().withDefault { BigInteger.ZERO }
         for ((preimage, num) in underlying) {
