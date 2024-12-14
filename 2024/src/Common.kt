@@ -2,6 +2,7 @@ import java.io.File
 import java.math.BigInteger
 import kotlin.math.abs
 import kotlin.math.log10
+import kotlin.math.sign
 
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Number)? = null, part2: ((T) -> Number)? = null) {
     val testData = parse(File("test_input/$day.txt"))
@@ -48,6 +49,7 @@ data class Vec2(val x: Int, val y: Int) {
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
 
     fun inBounds(min: Vec2, max: Vec2): Boolean = x in min.x..<max.x && y in min.y..<max.y
+    fun inSameMooreDirection(other: Vec2): Boolean = x.sign == other.x.sign && y.sign == other.y.sign
 
     companion object {
         val ZERO = Vec2(0, 0)

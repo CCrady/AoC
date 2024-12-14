@@ -1,5 +1,4 @@
 import java.io.File
-import kotlin.math.sign
 
 fun main() = solve("06", ::parse, ::part1, ::part2v2)
 
@@ -35,6 +34,20 @@ private fun part1(input: GuardStart): Int {
     return visited.count { b -> b }
 }
 
+// A naive approach which does not save any work between different obstacle positions.
+private fun part2v1(input: GuardStart): Int {
+    val passableMutable = MutableMatrix(input.passable.size) { pos -> input.passable[pos] }
+    val visitedScratch = VisitedMap(input.passable.size)
+    return extraObstacleLocations(input).count { pos ->
+        // temporarily set the current location to impassable
+        passableMutable[pos] = false
+        val doesLoop = isLoop(passableMutable, input.startPos, visitedScratch)
+        // set the current location back to passable
+        passableMutable[pos] = true
+        doesLoop
+    }
+}
+
 @JvmInline
 private value class VisitedMap(val underlying: Matrix<BooleanArray>) {
     operator fun get(pos: Vec2, dir: Vec2.CardinalDirection): Boolean = underlying[pos][dir.ordinal]
@@ -50,20 +63,6 @@ private value class VisitedMap(val underlying: Matrix<BooleanArray>) {
         for ((_, arr) in underlying) {
             arr.fill(false)
         }
-    }
-}
-
-// A naive approach which tests each possible obstacle location independently.
-private fun part2v1(input: GuardStart): Int {
-    val passableMutable = MutableMatrix(input.passable.size) { pos -> input.passable[pos] }
-    val visitedScratch = VisitedMap(input.passable.size)
-    return extraObstacleLocations(input).count { pos ->
-        // temporarily set the current location to impassable
-        passableMutable[pos] = false
-        val doesLoop = isLoop(passableMutable, input.startPos, visitedScratch)
-        // set the current location back to passable
-        passableMutable[pos] = true
-        doesLoop
     }
 }
 
@@ -93,89 +92,81 @@ private fun extraObstacleLocations(input: GuardStart): Sequence<Vec2> {
     }.map { (pos, _) -> pos }
 }
 
-// FIXME: gives the wrong answer
-
-private data class GuardState(val pos: Vec2, val dir: Vec2.CardinalDirection) {
-    fun isOutOfBounds(): Boolean = pos.x < 0
-    fun turn(): GuardState = GuardState(this.pos, this.dir.turnCW)
-
-    companion object {
-        val outOfBounds = GuardState(Vec2(-1, -1), Vec2.CardinalDirection.NORTH)
-    }
-}
-private typealias ShortcutMap = Map<GuardState, GuardState>
-
+// A much faster approach which pre-calculates where the guard will end up from most positions.
 private fun part2v2(input: GuardStart): Int {
     val startState = GuardState(input.startPos, Vec2.CardinalDirection.NORTH)
     val shortcutMap = makeShortcutMap(input.passable, startState)
     return extraObstacleLocations(input).count counter@{ extraObstacle ->
         val reachedStates = mutableSetOf<GuardState>()
-        var currentState = startState
-        do {
-            val nextState = nextBump(input.passable, shortcutMap, extraObstacle, currentState)
+        var currState = startState
+        while (!currState.isOutOfBounds()) {
+            val nextState = bumpTurnFast(input.passable, shortcutMap, extraObstacle, currState)
             if (nextState in reachedStates) return@counter true // we've found a loop
             reachedStates.add(nextState)
-            currentState = nextState
-        } while (!currentState.isOutOfBounds())
+            currState = nextState
+        }
         return@counter false // after iterating enough times we got out of bounds
     }
 }
 
+private data class GuardState(val pos: Vec2, val dir: Vec2.CardinalDirection) {
+    fun isOutOfBounds(): Boolean = pos.x < 0
+}
+private typealias ShortcutMap = Map<GuardState, GuardState>
+
 private fun makeShortcutMap(passable: Matrix<Boolean>, startState: GuardState): ShortcutMap {
     val obstacles = passable.toSequence().filter { (_, isPassable) -> !isPassable }.map { (pos, _) -> pos }
-    val obstructedStates = obstacles.flatMap { pos ->
-        Vec2.CardinalDirection.entries.map { dir -> GuardState(pos + dir, dir.reverse) }
+    // the states a guard can be in after bumping into one of the obstacles and turning
+    val bumpTurnedStates = obstacles.flatMap { pos ->
+        Vec2.CardinalDirection.entries.map { dir ->
+            GuardState(pos - dir, dir.turnCW)
+        }
     }.filter { (pos, _) ->
         passable.inBounds(pos)
     }
-    val nextStates = obstructedStates.map { guardState ->
-        findObstacle(passable, guardState.turn())
-    }
-    // don't forget to include the first obstruction we face from the start state!
-    val obstructionFromStartState = findObstacle(passable, startState)
-    val associations = (obstructedStates zip nextStates) + (startState to obstructionFromStartState)
-    return associations.toMap()
+    // make sure to include the starting state in the map!
+    val fromStates = sequenceOf(startState) + bumpTurnedStates
+    return fromStates.associateWith { guardState -> bumpTurn(passable, guardState) }
 }
 
-// Move forwards from the given location-direction. Return the first obstructed position we get into, or outOfBounds if
-// there are no obstacles in our way.
-private fun findObstacle(passable: Matrix<Boolean>, fromState: GuardState): GuardState {
+// Move forwards from the given location-direction until we bump into something, and then turn right. If we go out of
+// bounds, then return an out-of-bounds state instead.
+private fun bumpTurn(passable: Matrix<Boolean>, fromState: GuardState): GuardState {
     val guardDir = fromState.dir
     var guardPos = fromState.pos
     while (passable.inBounds(guardPos)) {
         if (!passable[guardPos]) {
             guardPos -= guardDir
-            return GuardState(guardPos, guardDir)
+            return GuardState(guardPos, guardDir.turnCW)
         }
         guardPos += guardDir
     }
-    return GuardState.outOfBounds
+    return GuardState(Vec2(-1, -1), guardDir.turnCW)
 }
 
-// Given the shortcut map, the extra obstacle we've added, and the guard's current state, find the guard's next
-// obstructed state.
-private fun nextBump(
-    passable: Matrix<Boolean>, shortcutMap: ShortcutMap, extraObstacle: Vec2, guardState: GuardState
+// Given the shortcut map, the extra obstacle we've added, and the guard's current state, find the guard's state after
+// they've bumped into something and turned.
+private fun bumpTurnFast(
+    passable: Matrix<Boolean>, shortcutMap: ShortcutMap, extraObstacle: Vec2, currState: GuardState
 ): GuardState {
-    // if the current state isn't in the shortcut map, that means we just bumped into the extra obstacle and we need to
-    // calculate the next obstructed state the slow way
-    if (guardState !in shortcutMap) {
-        return findObstacle(passable, guardState.turn())
-    }
-    val predictedState = shortcutMap.getValue(guardState)
-    val vecToExtra = extraObstacle - guardState.pos
-    // the predicted state is one position before the obstacle itself
-    val vecToPredicted = predictedState.pos + guardState.dir.turnCW - guardState.pos
-    val willMoveInDirectionOfExtra = vecToExtra.x.sign == vecToPredicted.x.sign
-                                  && vecToExtra.y.sign == vecToPredicted.y.sign
-    // if we're not moving towards the extra obstacle, or the extra obstacle is closer than the predicted one, then
-    // we'll hit the predicted one next
-    if (!willMoveInDirectionOfExtra || vecToPredicted.mag < vecToExtra.mag) {
-        return predictedState
-    }
-    // otherwise we'll hit the extra obstacle
-    val newDir = guardState.dir.turnCW
-    val newPos = extraObstacle - newDir
-    return GuardState(newPos, newDir)
-
+    // if the current state isn't in the shortcut map, that means the guard just bumped into the extra obstacle and we
+    // need to calculate the next obstructed state the slow way. we don't need to check whether they'll bump into the
+    // extra obstacle here because they just did, so they're no longer facing it.
+    if (currState !in shortcutMap) return bumpTurn(passable, currState)
+    // otherwise we have a prediction
+    val predictedState = shortcutMap.getValue(currState)
+    val vecToExtra = extraObstacle - currState.pos
+    val facingExtra = vecToExtra.inSameMooreDirection(currState.dir.vector)
+    if (!facingExtra) return predictedState
+    // otherwise the guard is currently facing the extra obstacle, and therefore stands a chance of bumping into it
+    val distanceToExtra = vecToExtra.mag
+    val distanceToPredicted =
+        if (predictedState.isOutOfBounds())
+            Int.MAX_VALUE
+        else
+            (predictedState.pos - currState.pos).mag + 1
+    if (distanceToPredicted < distanceToExtra) return predictedState
+    // otherwise the guard will bump into the extra obstacle before they bump into the predicted one
+    val newPos = extraObstacle - currState.dir
+    return GuardState(newPos, predictedState.dir)
 }
