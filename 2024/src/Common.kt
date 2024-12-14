@@ -155,18 +155,18 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
     fun toMutable(): MutableMatrix<E> {
         return MutableMatrix(underlying.map { row ->
             row.toMutableList()
-        }.toMutableList())
+        })
     }
 }
 
-class MutableMatrix<E>(private val underlying: MutableList<MutableList<E>>): Matrix<E>(underlying) {
+class MutableMatrix<E>(private val underlying: List<MutableList<E>>): Matrix<E>(underlying) {
     operator fun set(x: Int, y: Int, value: E) {
         underlying[y][x] = value
     }
     operator fun set(pos: Vec2, value: E) = set(pos.x, pos.y, value)
 
     constructor(size: Vec2, init: (Vec2) -> E): this(
-        MutableList(size.y) { y ->
+        List(size.y) { y ->
             MutableList(size.x) { x ->
                 init(Vec2(x, y))
             }

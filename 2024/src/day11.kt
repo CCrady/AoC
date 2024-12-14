@@ -1,7 +1,7 @@
 import java.io.File
 import java.math.BigInteger
 
-fun main() = solve("11", ::parse, ::part1, ::part2)
+fun main() = solve("11", ::parse, parts(25), parts(75))
 
 private fun parse(file: File): List<BigInteger> {
     return file.readLines().first().split(' ').map(String::toBigInteger)
@@ -13,20 +13,12 @@ private fun parse(file: File): List<BigInteger> {
 // All 2- and 4-digit pebbles will split down to 1-digit pebbles after 1 or 2 blinks, and all 1-digit pebbles go in
 // loops rather than exploding to infinity.
 
-private fun part1(input: List<BigInteger>): BigInteger {
+private fun parts(blinks: Int): (List<BigInteger>) -> BigInteger = { input ->
     var pebbles = input.toMultiset()
-    repeat(25) {
+    repeat(blinks) {
         pebbles = pebbles.multiMap { pebble -> step(pebble) }
     }
-    return pebbles.size
-}
-
-private fun part2(input: List<BigInteger>): BigInteger {
-    var pebbles = input.toMultiset()
-    repeat(75) {
-        pebbles = pebbles.multiMap { pebble -> step(pebble) }
-    }
-    return pebbles.size
+    pebbles.size
 }
 
 private fun step(n: BigInteger): List<BigInteger> {

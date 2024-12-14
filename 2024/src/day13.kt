@@ -14,8 +14,7 @@ private fun parse(file: File): List<ClawMachine> {
         val (x, y) = match.destructured
         return BigVec2(x.toBigInteger(), y.toBigInteger())
     }
-    return file.readLines().chunked(4) { lines ->
-        val (aLine, bLine, prizeLine) = lines
+    return file.readLines().chunked(4) { (aLine, bLine, prizeLine) ->
         val aVec = matchToBigVec2("""Button A: X\+(\d+), Y\+(\d+)""".toRegex().matchEntire(aLine)!!)
         val bVec = matchToBigVec2("""Button B: X\+(\d+), Y\+(\d+)""".toRegex().matchEntire(bLine)!!)
         val prizeVec = matchToBigVec2("""Prize: X=(\d+), Y=(\d+)""".toRegex().matchEntire(prizeLine)!!)
@@ -23,8 +22,8 @@ private fun parse(file: File): List<ClawMachine> {
     }
 }
 
-// Both parts can be solved with the same technique, but part 2 requires a larger integer type, so to be DRYer we just
-// do both parts with BigIntegers.
+// Both parts can be solved with the same technique, but part 2 requires a larger integer type, so to be DRYer just do
+// both parts with BigIntegers.
 private fun part1(machines: List<ClawMachine>): BigInteger = machines.sumOf { (aVec, bVec, prizeVec) ->
     // make sure that there's only one way to get to the prize
     require(!aVec.isParallelTo(bVec))
