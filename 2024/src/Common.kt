@@ -26,6 +26,11 @@ fun numDigits(n: Number): Int = (log10(n.toDouble()) + 1.0).toInt()
 tailrec fun gcd(a: Int, b: Int): Int = if (b == 0) a else gcd(b, a % b)
 tailrec fun gcd(a: BigInteger, b: BigInteger): BigInteger = if (b == BigInteger.ZERO) a else gcd(b, a % b)
 
+fun safeRem(a: Int, b: Int): Int {
+    val rem = a % b
+    return if (rem >= 0) rem else rem + b
+}
+
 fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     return this.fold(mutableSetOf()) { acc, el ->
         acc.addAll(transform(el))
@@ -37,6 +42,8 @@ data class Vec2(val x: Int, val y: Int) {
     // magnitude of the vector, using the manhattan distance
     val mag: Int
         get() = abs(x) + abs(y)
+    val sign: Vec2
+        get() = Vec2(x.sign, y.sign)
 
     operator fun unaryPlus(): Vec2 = this
     operator fun unaryMinus(): Vec2 = Vec2(-x, -y)
@@ -47,6 +54,8 @@ data class Vec2(val x: Int, val y: Int) {
     operator fun minus(other: MooreDirection): Vec2 = this - other.vector
     operator fun minus(other: CardinalDirection): Vec2 = this - other.vector
     operator fun times(other: Int): Vec2 = Vec2(x * other, y * other)
+    operator fun div(other: Int): Vec2 = Vec2(x / other, y / other)
+    operator fun rem(other: Vec2) = Vec2(safeRem(x, other.x), safeRem(y, other.y))
 
     fun inBounds(min: Vec2, max: Vec2): Boolean = x in min.x..<max.x && y in min.y..<max.y
     fun inSameMooreDirection(other: Vec2): Boolean = x.sign == other.x.sign && y.sign == other.y.sign
@@ -127,6 +136,10 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
     fun getOrDefault(x: Int, y: Int, default: E): E = if (inBounds(x, y)) this[x, y] else default
     fun getOrDefault(pos: Vec2, default: E): E = getOrDefault(pos.x, pos.y, default)
 
+    override fun toString(): String {
+        return underlying.joinToString("\n") { row -> row.joinToString("") }
+    }
+
     constructor(size: Vec2, init: (Vec2) -> E) : this(
         List(size.y) { y ->
             List(size.x) { x ->
@@ -173,10 +186,10 @@ class MutableMatrix<E>(private val underlying: List<MutableList<E>>): Matrix<E>(
         }
     )
 
-    fun mapInPlace(transform: (Vec2, E) -> E): MutableMatrix<E> {
-        for ((y, row) in underlying.withIndex()) {
+    fun mapInPlace(transform: (E) -> E): MutableMatrix<E> {
+        for (row in underlying) {
             for (x in row.indices) {
-                row[x] = transform(Vec2(x, y), row[x])
+                row[x] = transform(row[x])
             }
         }
         return this
