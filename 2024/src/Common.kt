@@ -154,6 +154,14 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
 
     data class IndexedValue<T>(val index: Vec2, val value: T)
 
+    fun <R> mapIndexed(transform: (Vec2, E) -> R): Matrix<R> {
+        return Matrix(underlying.mapIndexed { y, row ->
+            row.mapIndexed { x, el ->
+                transform(Vec2(x, y), el)
+            }
+        })
+    }
+
     fun toSequence(): Sequence<IndexedValue<E>> = sequence {
         for ((y, row) in underlying.withIndex()) {
             for ((x, element) in row.withIndex()) {
