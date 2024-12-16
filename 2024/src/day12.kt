@@ -20,13 +20,10 @@ private data class Region(val plots: Collection<Vec2>, val edges: Collection<Edg
     fun numSides(): Int {
         var numSidesAcc = 0
         val uncountedEdges = edges.toMutableSet()
-        // iterate through uncountedEdges, and remove all contiguous edges with the same orientation
-        while (uncountedEdges.isNotEmpty()) {
+        // repeatedly pop an arbitrary edge from uncountedEdges, and remove all contiguous edges with the same
+        // orientation
+        for (edge in uncountedEdges.poppingIterator()) {
             numSidesAcc++
-
-            // pop an arbitrary edge from uncountedEdges
-            val edge = uncountedEdges.first()
-            uncountedEdges.remove(edge)
             // remove all contiguous edges with the same orientation in the given direction
             fun runningRemove(dir: Vec2.CardinalDirection) {
                 var toRemove = edge.nudge(dir)

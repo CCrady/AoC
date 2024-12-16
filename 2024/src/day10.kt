@@ -14,11 +14,9 @@ private fun part1(atlas: Matrix<Int>): Int {
         pos
     }
     return trailheads.sumOf { headPos ->
-        var frontier = setOf(headPos)
-        for (height in 1..9) {
-            frontier = nextFrontier(atlas, frontier, height)
-        }
-        frontier.size
+        (1..9).fold(setOf(headPos)) { frontier, height ->
+            nextFrontier(atlas, frontier, height)
+        }.size
     }
 }
 
@@ -38,11 +36,11 @@ private fun part2(atlas: Matrix<Int>): BigInteger {
     }.map { (pos, _) ->
         pos
     }
-    // multiset of all the locations at the given height that can reach a summit; the frequency of a location is the
-    // number of paths from it to a summit
-    var numPathsFromLocs = summits.toMultiset()
-    for (nextHeight in 8 downTo 0) {
-        numPathsFromLocs = numPathsFromLocs.multiMap { currPos ->
+    val numPathsFromTrailheads = (8 downTo 0).fold(summits.toMultiset()) { numPathsFromLocs, nextHeight ->
+        // numPathsFromLocs is a multiset of all the locations at the given height that can reach a summit; the
+        // frequency of a location is the number of paths from it to a summit
+        numPathsFromLocs.multiMap { currPos ->
+            // the set of positions at the next height that are reachable from currPos
             Vec2.CardinalDirection.entries.map { dir ->
                 currPos + dir
             }.filter { nextPos ->
@@ -50,5 +48,5 @@ private fun part2(atlas: Matrix<Int>): BigInteger {
             }
         }
     }
-    return numPathsFromLocs.size
+    return numPathsFromTrailheads.size
 }

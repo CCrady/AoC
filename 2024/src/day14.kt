@@ -14,14 +14,16 @@ fun main() {
 private data class Robot(val pos: Vec2, val vel: Vec2)
 
 private fun parse(file: File): Pair<Vec2, List<Robot>> {
-    val lines = file.readLines()
-    val (width, height) = """(\d+)x(\d+)""".toRegex().matchEntire(lines.first())!!.destructured
-    val robots = lines.drop(1).map { line ->
-        val match = """p=(-?\d+),(-?\d+) v=(-?\d+),(-?\d+)""".toRegex().matchEntire(line)!!
-        val (posX, posY, velX, velY) = match.destructured
-        Robot(Vec2(posX.toInt(), posY.toInt()), Vec2(velX.toInt(), velY.toInt()))
+    fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.drop(1).map { group ->
+        group!!.value.toInt()
     }
-    return Pair(Vec2(width.toInt(), height.toInt()), robots)
+    val lines = file.readLines()
+    val (width, height) = """(\d+)x(\d+)""".toRegex().matchToInts(lines.first())
+    val robots = lines.drop(1).map { line ->
+        val (posX, posY, velX, velY) = """p=(-?\d+),(-?\d+) v=(-?\d+),(-?\d+)""".toRegex().matchToInts(line)
+        Robot(Vec2(posX, posY), Vec2(velX, velY))
+    }
+    return Pair(Vec2(width, height), robots)
 }
 
 private fun part1(input: Pair<Vec2, List<Robot>>): Int {
@@ -42,6 +44,8 @@ private fun part1(input: Pair<Vec2, List<Robot>>): Int {
     return numRobotsInQuadrants.fold(1, Int::times)
 }
 
+// Determining whether the robot swarm is forming a picture of a Christmas tree requires a subjective judgement, so we
+// display likely candidates to the user until they find a suitable state.
 private fun part2(input: Pair<Vec2, List<Robot>>) {
     println("part 2 real (press enter to search):")
     val (bounds, robots) = input
@@ -66,6 +70,7 @@ private fun stepRobots(bounds: Vec2, robotVels: List<Vec2>, currRobotPoses: Muta
     }
 }
 
+// The average manhattan distance from a robot to the centroid of the swarm.
 private fun averageDeviation(robotPoses: List<Vec2>): Int {
     val centroid = robotPoses.fold(Vec2.ZERO, Vec2::plus) / robotPoses.size
     return robotPoses.sumOf { pos -> (pos - centroid).mag } / robotPoses.size

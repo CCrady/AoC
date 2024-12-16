@@ -225,14 +225,13 @@ value class Multiset<E>(private val underlying: Map<E, BigInteger>) {
     fun toSet(): Set<E> = underlying.keys
 
     constructor(): this(mapOf<E, BigInteger>().withDefault { BigInteger.ZERO })
-    constructor(from: Sequence<E>): this(
+    constructor(from: Iterable<E>): this(
         mutableMapOf<E, BigInteger>().withDefault { BigInteger.ZERO }.also { underlying ->
             for (el in from) {
                 underlying[el] = underlying.getValue(el) + BigInteger.ONE
             }
         }
     )
-    constructor(from: Iterable<E>): this(from.asSequence())
 
     // this is the flatmap of the multiset monad, but the name "flatMap" is already in use
     fun <R> multiMap(transform: (E) -> Iterable<R>): Multiset<R> {
@@ -246,7 +245,7 @@ value class Multiset<E>(private val underlying: Map<E, BigInteger>) {
     }
 }
 
-fun <E> Sequence<E>.toMultiset(): Multiset<E> = Multiset(this)
+fun <E> Sequence<E>.toMultiset(): Multiset<E> = Multiset(this.asIterable())
 fun <E> Iterable<E>.toMultiset(): Multiset<E> = Multiset(this)
 fun <E> Set<E>.toMultiset(): Multiset<E> = Multiset(
     this.associateWith { BigInteger.ONE }.withDefault { BigInteger.ZERO }
