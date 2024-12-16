@@ -38,6 +38,15 @@ fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     }
 }
 
+fun <T> MutableSet<T>.poppingIterator(): Iterator<T> = object: Iterator<T> {
+    override fun hasNext(): Boolean = this@poppingIterator.isNotEmpty()
+    override fun next(): T {
+        val popped = this@poppingIterator.first()
+        this@poppingIterator.remove(popped)
+        return popped
+    }
+}
+
 data class Vec2(val x: Int, val y: Int) {
     // magnitude of the vector, using the manhattan distance
     val mag: Int
