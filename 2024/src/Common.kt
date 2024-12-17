@@ -111,6 +111,12 @@ data class Vec2(val x: Int, val y: Int) {
                 WEST  -> EAST
                 NORTH -> SOUTH
             }
+        fun asChar(): Char = when (this) {
+            EAST  -> '>'
+            SOUTH -> 'v'
+            WEST  -> '<'
+            NORTH -> '^'
+        }
     }
 }
 
