@@ -35,6 +35,8 @@ fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.dr
     group!!.value.toInt()
 }
 
+fun <E> List<E>.dropLastView(): List<E> = subList(0, size - 1)
+
 fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     return this.fold(mutableSetOf()) { acc, el ->
         acc.addAll(transform(el))

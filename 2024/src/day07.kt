@@ -1,5 +1,6 @@
 import java.io.File
-import kotlin.math.*
+import kotlin.math.pow
+import kotlin.math.roundToLong
 
 fun main() = solve("07", ::parse, ::part1, ::part2)
 
@@ -58,5 +59,3 @@ private fun removeSuffix(n: Long, suffix: Long): Long {
     if (n % digitBreak != suffix) return -1
     return n / digitBreak
 }
-
-private fun <E> List<E>.dropLastView(): List<E> = subList(0, size - 1)
