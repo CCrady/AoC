@@ -14,9 +14,6 @@ fun main() {
 private data class Robot(val pos: Vec2, val vel: Vec2)
 
 private fun parse(file: File): Pair<Vec2, List<Robot>> {
-    fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.drop(1).map { group ->
-        group!!.value.toInt()
-    }
     val lines = file.readLines()
     val (width, height) = """(\d+)x(\d+)""".toRegex().matchToInts(lines.first())
     val robots = lines.drop(1).map { line ->

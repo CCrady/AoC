@@ -30,12 +30,10 @@ private fun isSafeWithDampener(report: List<Int>): Boolean {
     return removeEach(report).any(::isSafe)
 }
 
-private fun <E> removeEach(list: List<E>): Sequence<List<E>> {
-    return sequence {
-        for (i in list.indices) {
-            val leftHalf = list.slice(0..<i)
-            val rightHalf = list.slice((i+1)..<list.size)
-            yield(leftHalf + rightHalf)
-        }
+private fun <E> removeEach(list: List<E>): Sequence<List<E>> = sequence {
+    for (i in list.indices) {
+        val leftHalf = list.subList(0, i)
+        val rightHalf = list.subList(i + 1, list.size)
+        yield(leftHalf + rightHalf)
     }
 }

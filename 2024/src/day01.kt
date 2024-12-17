@@ -5,11 +5,8 @@ fun main() = solve("01", ::parse, ::part1, ::part2)
 
 private fun parse(file: File): Pair<List<Int>, List<Int>> {
     return file.readLines().map { line ->
-        val pattern = "(\\d+) +(\\d+)".toRegex()
-        val match = pattern.matchEntire(line)
-        requireNotNull(match)
-        val (leftString, rightString) = match.destructured
-        Pair(leftString.toInt(), rightString.toInt())
+        val (leftNum, rightNum) = "(\\d+) +(\\d+)".toRegex().matchToInts(line)
+        Pair(leftNum, rightNum)
     }.unzip()
 }
 

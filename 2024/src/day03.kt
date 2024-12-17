@@ -2,9 +2,7 @@ import java.io.File
 
 fun main() = solve("03", ::parse, ::part1, ::part2)
 
-private fun parse(file: File): String {
-    return file.readLines().joinToString("\n")
-}
+private fun parse(file: File): String = file.readText()
 
 private fun part1(input: String): Int {
     val pattern = """mul\((\d{1,3}),(\d{1,3})\)""".toRegex()
