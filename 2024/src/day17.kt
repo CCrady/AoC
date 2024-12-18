@@ -1,11 +1,9 @@
 import java.io.File
 
-// TODO: clean this up :P
-
 fun main() = solve("17", ::parse, ::part1, ::part2)
 
-private data class ProgramState(val ip: Long, val regA: Long, val regB: Long, val regC: Long) {
-    fun withIp(newIp: Long): ProgramState = ProgramState(newIp, regA, regB, regC)
+private data class ProgramState(val ip: Int, val regA: Long, val regB: Long, val regC: Long) {
+    fun withIp(newIp: Int): ProgramState = ProgramState(newIp, regA, regB, regC)
     fun withA(newA: Long): ProgramState = ProgramState(ip, newA, regB, regC)
     fun withB(newB: Long): ProgramState = ProgramState(ip, regA, newB, regC)
     fun withC(newC: Long): ProgramState = ProgramState(ip, regA, regB, newC)
@@ -22,94 +20,19 @@ private fun parse(file: File): Pair<ProgramState, ProgramInstructions> {
     return Pair(ProgramState(0, regA.toLong(), regB.toLong(), regC.toLong()), instructions)
 }
 
+
 private fun part1(input: Pair<ProgramState, ProgramInstructions>): String {
     val (startState, instructions) = input
     return runProgram(startState, instructions).joinToString(",")
 }
 
-// My input: 2,4, 1,7, 7,5, 1,7, 0,3, 4,1, 5,5, 3,0
-// => bst A, bxl 7, cdv B, bxl 7, adv 3, bxc, out B, jnz 0
-// there is exactly one jump instruction, and it's at the end pointing back to the start. the program is therefore a
-// simple while loop.
-//
-// Start:
-// A a, B b, C c
-// -- bst A ->
-// A a, B a % 8, C c
-// -- bxl 7 ->
-// A a, B (a % 8) ^ 7, C c
-// A a, B 7 - (a % 8), C c
-// -- cdv B ->
-// A a, B 7 - (a % 8), C a >> (7 - (a % 8))
-// -- bxl 7 ->
-// A a, B a % 8, C a >> (7 - (a % 8))
-// -- adv 3 ->
-// A a >> 3, B a % 8, C a >> (7 - (a % 8))
-// -- bxc ->
-// A a >> 3, B (a % 8) ^ (a >> (7 - (a % 8))), C a >> (7 - (a % 8))
-// -- out B ->
-// print ((a % 8) ^ (a >> (7 - (a % 8)))) % 8
-// -- jnz 0 ->
-// jump back to the start, with a = a >> 3
-//
-// This program will, at each step, set the values of B and C depending on the last 3 bits of A, and then replace A with
-// A >> 3. So it ends up working its way through the original value of A, 3 bits at a time, starting with the least
-// significant bits and going up. The program is 16 numbers long, so the starting value of A is effectively a 48-bit
-// bitstring. The one hiccup is that the number that gets printed also depends on the rest of the bitstring that hasn't
-// been consumed yet, so it's not as easy as just mapping 3-bit input words to 3-bit output numbers.
-//
-// It might be helpful to start from the end. The last number we output is 0, and on the last loop a >> 3 must be 0 in
-// order for the program to terminate. So on the last loop, ((a % 8) ^ (a >> (7 - (a % 8)))) % 8 == 0, but a != 0
-// because otherwise the program would've already terminated on the previous loop. Therefore a is in the range 1..7.
-
-private fun part2(input: Pair<ProgramState, ProgramInstructions>): Long {
-    return recursiveSearch(listOf(2,4,1,7,7,5,1,7,0,3,4,1,5,5,3,0))
-}
-
-private fun recursiveSearch(targetOutput: List<Long>): Long {
-    // TODO: Modify this function to work with other input programs. We should still assume that the program is of the
-    //       form "..., adv 3, ..., out [B/C], ..., jnz 0", i.e. it's a while loop on the value of A, the value of A
-    //       gets shifted 3 bits to the right each iteration, and exactly one number is output each iteration. We should
-    //       also assume that which number gets output during a given iteration depends solely on the value of A at the
-    //       start of the iteration, i.e. the values of B and C at the end of an iteration get clobbered during the next
-    //       iteration and don't impact the result.
-    fun outputFromA(a: Long): Long {
-        // SSA form of one iteration of the program
-        val b1 = a % 8
-        val b2 = b1 xor 7
-        val c3 = a shr b2.toInt()
-        val b4 = b1 // b1 xor 7 xor 7
-        val b5 = b4 xor c3
-        return b5 % 8
-    }
-
-    // TODO: If we just want the minimum, we can take only the first element of the sequence, because we start with the
-    //       lowest possible value of currWord at each depth. This function could therefore be changed to return an Int?
-    //       instead of a sequence.
-    fun recursive(targetOutput: List<Long>, nextA: Long): Sequence<Long> = sequence {
-        if (targetOutput.isEmpty()) {
-            yield(nextA)
-            return@sequence
-        }
-        val currTarget = targetOutput.last()
-        val restTargets = targetOutput.dropLastView()
-        for (currWord in 0L..7L) {
-            val currA = nextA * 8 + currWord
-            if (currA == 0L) continue
-            if (outputFromA(currA) != currTarget) continue
-            yieldAll(recursive(restTargets, currA))
-        }
-    }
-
-    return recursive(targetOutput, 0).min()
-}
-
-
+// This function can cope with all valid programs, including ones that do strange things like jumping to an odd
+// instruction pointer.
 private fun runProgram(startState: ProgramState, instructions: ProgramInstructions): Sequence<Long> = sequence {
     var currState = startState
     while (currState.ip < instructions.size) {
-        val opcode = instructions[currState.ip.toInt()]
-        val operand = instructions[currState.ip.toInt() + 1]
+        val opcode = instructions[currState.ip]
+        val operand = instructions[currState.ip + 1]
         currState = when (opcode) {
             0L -> division(ProgramState::withA, operand, currState)
             1L -> bxl(operand, currState)
@@ -127,6 +50,100 @@ private fun runProgram(startState: ProgramState, instructions: ProgramInstructio
         currState = currState.withIp(currState.ip + 2)
     }
 }
+
+
+// Because the answers are so large (> Int.MAX_VALUE), it's infeasible to check each value of A individually. Instead,
+// this approach requires the program to be structured in such a way that the initial value of A acts as a bit-string
+// made of 3-bit words, and the program iterates over those words from least to most significant. See below for more
+// detailed requirements and assumptions.
+//
+// As an example of the kind of analysis that went into this solution, take the following program:
+//     bdv 0, cdv 1, bxc, out B, adv 3, jnz 0
+// This is a while loop, which iterates until the value of the A register is 0. On each iteration it outputs the value
+// (X ^ (X >> 1)) % 8 and sets the value of the A register to X >> 3 (where X is the value of the A register at the
+// start of the iteration). Therefore, given a starting value of the A register, we can find the program's output by
+// repeatedly calculating (A ^ (A >> 1)) % 8 and setting A = A >> 3, stopping once A is 0. Because we shift A to the
+// right by three bits on each iteration, if we know the value of A on a given iteration there are only 8 easy-to-find
+// possibilities for the value of A on the previous iteration. Also, we only need the value of A at the start of an
+// iteration to know what's output on that iteration. Using this knowledge we can do a recursive tree search similar to
+// the one from day 7, where we start from the final iteration and work our way backwards, cutting off branches when
+// they become nonviable.
+private fun part2(input: Pair<ProgramState, ProgramInstructions>): Long? {
+    val (_, instructions) = input
+    val instructionsChunked = instructions.chunked(2) { (opcode, operand) -> Pair(opcode, operand) }
+    // the program must end with `jnz 0`, so that the entire thing is a while loop on the value of the A register
+    require(instructionsChunked.last() == Pair(3L, 0L))
+    // the program must not have any other `jnz` instructions, so that each iteration of the while loop is a simple
+    // series of register mutations
+    require(!instructionsChunked.dropLastView().any { (opcode, _) -> opcode == 3L })
+    // the program must have exactly one `out` instruction, so that it outputs exactly one number on each iteration of
+    // the while loop
+    require(instructionsChunked.count { (opcode, _) -> opcode == 5L } == 1)
+    // the program must have `adv` instructions that, taken together, divide the A register by 8 (i.e. shift it right by
+    // 3 bits) on each iteration of the while loop
+    require(instructionsChunked.filter { (opcode, _) -> opcode == 0L }.sumOf { (_, operand) -> operand } == 3L)
+    // the program must also not keep the values of the B and C registers around between loop iterations, so that which
+    // number is output on an iteration depends solely on the value of A at the start of the iteration. this is more
+    // difficult to test for programmatically, so I've skipped using another require() here.
+
+    return findQuine(instructions)
+}
+
+// Find the minimum initial value of A that produces a quine, or null if no such value exists.
+private fun findQuine(instructions: ProgramInstructions): Long? {
+    // Find the minimum value of A where, when the program is run with its A register initially set to this value,
+    // 1. the first N numbers the program outputs will be targetOutput, and
+    // 2. at the end of the Nth iteration/start of the N+1th iteration, the value of the A register will be nextA.
+    // If no such value of A exists return null.
+    fun minimumSatisfyingAOrNull(targetOutput: List<Long>, nextA: Long): Long? {
+        // each recursive depth corresponds to one of the iterations of the while loop, and currWord is the associated
+        // 3-bit word of A
+        if (targetOutput.isEmpty()) return nextA
+
+        val currTarget = targetOutput.last()
+        val restTargets = targetOutput.dropLastView()
+        // search the possible words for this iteration from least to greatest, so that the first starting value of A
+        // we come across that satisfies the conditions is also the minimum one
+        for (currWord in 0L..7L) {
+            // the starting value of A for this iteration
+            val currA = nextA * 8 + currWord
+            // if the starting value of A during this iteration were zero, then the ending value of A would've been 0
+            // during the previous iteration, and the while loop would've ended
+            if (currA == 0L) continue
+            // if the given value of A produces the wrong output, then we're on the wrong track
+            if (iterationOutput(instructions, currA) != currTarget) continue
+            val satisfyingA = minimumSatisfyingAOrNull(restTargets, currA)
+            // if we've found a starting value of A that satisfies the conditions, then no need to search further
+            if (satisfyingA != null) return satisfyingA
+        }
+        // if none of the possible words for this iteration worked, then backtrack
+        return null
+    }
+
+    return minimumSatisfyingAOrNull(instructions, 0)
+}
+
+// Given a program's instructions and the initial value of the A register, find the number it outputs on the first
+// iteration of the while loop. This will produce the same result as taking the first value yielded by runProgram(), but
+// it has the added benefit that if our extra assumptions don't hold it will fail loudly instead of silently.
+private fun iterationOutput(instructions: ProgramInstructions, initialA: Long): Long {
+    var currState = ProgramState(0, initialA, 0, 0)
+    for ((opcode, operand) in instructions.chunked(2)) {
+        currState = when (opcode) {
+            0L -> division(ProgramState::withA, operand, currState)
+            1L -> bxl(operand, currState)
+            2L -> bst(operand, currState)
+            3L -> throw IllegalStateException("Encountered a jnz instruction before the first out instruction")
+            4L -> bxc(operand, currState)
+            5L -> return getCombo(operand, currState) % 8
+            6L -> division(ProgramState::withB, operand, currState)
+            7L -> division(ProgramState::withC, operand, currState)
+            else -> throw IllegalStateException("Invalid opcode $opcode")
+        }
+    }
+    throw IllegalStateException("No out instruction (opcode 5) in the program")
+}
+
 
 private fun getCombo(op: Long, state: ProgramState): Long {
     return when (op) {
@@ -163,6 +180,6 @@ private fun jnz(op: Long, state: ProgramState): ProgramState {
         state
     } else {
         // subtract 2 so that when we later add 2 the instruction pointer ends up at op
-        state.withIp(op - 2)
+        state.withIp(op.toInt() - 2)
     }
 }
