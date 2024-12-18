@@ -4,7 +4,7 @@ import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.sign
 
-fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any)? = null, part2: ((T) -> Any)? = null) {
+fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any?)? = null, part2: ((T) -> Any?)? = null) {
     val testData = parse(File("test_input/$day.txt"))
     val inputData = parse(File("input/$day.txt"))
     if (part1 != null) {
@@ -29,6 +29,12 @@ tailrec fun gcd(a: BigInteger, b: BigInteger): BigInteger = if (b == BigInteger.
 fun safeRem(a: Int, b: Int): Int {
     val rem = a % b
     return if (rem >= 0) rem else rem + b
+}
+
+fun countUp(start: Int = 0): Iterator<Int> = object: Iterator<Int> {
+    var n = start
+    override fun hasNext(): Boolean = true
+    override fun next(): Int = n++
 }
 
 fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.drop(1).map { group ->
