@@ -8,16 +8,12 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any?)? = null, par
     val testData = parse(File("test_input/$day.txt"))
     val inputData = parse(File("input/$day.txt"))
     if (part1 != null) {
-        println("""
-            part 1 test: ${ part1(testData) }
-            part 1 real: ${ part1(inputData) }
-        """.trimIndent())
+        println("part 1 test: ${ part1(testData) }")
+        println("part 1 real: ${ part1(inputData) }")
     }
     if (part2 != null) {
-        println("""
-            part 2 test: ${ part2(testData) }
-            part 2 real: ${ part2(inputData) }
-        """.trimIndent())
+        println("part 2 test: ${ part2(testData) }")
+        println("part 2 real: ${ part2(inputData) }")
     }
 }
 
