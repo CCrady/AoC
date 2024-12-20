@@ -156,6 +156,8 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
 
     operator fun get(x: Int, y: Int): E = underlying[y][x]
     operator fun get(pos: Vec2): E = get(pos.x, pos.y)
+    open fun getValue(x: Int, y: Int): E = get(x, y)
+    open fun getValue(pos: Vec2): E = get(pos)
     fun getOrDefault(x: Int, y: Int, default: E): E = if (inBounds(x, y)) this[x, y] else default
     fun getOrDefault(pos: Vec2, default: E): E = getOrDefault(pos.x, pos.y, default)
 
@@ -174,9 +176,19 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
         Vec2(lines.first().length, lines.size),
         { pos -> transform(pos, lines[pos.y][pos.x]) }
     )
+    companion object {
+        fun fromLines(lines: List<String>): Matrix<Char> = Matrix(lines) { _, c -> c }
+    }
 
     data class IndexedValue<T>(val index: Vec2, val value: T)
 
+    fun <R> map(transform: (E) -> R): Matrix<R> {
+        return Matrix(underlying.map { row ->
+            row.map { el ->
+                transform(el)
+            }
+        })
+    }
     fun <R> mapIndexed(transform: (Vec2, E) -> R): Matrix<R> {
         return Matrix(underlying.mapIndexed { y, row ->
             row.mapIndexed { x, el ->
@@ -200,6 +212,12 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
         return MutableMatrix(underlying.map { row ->
             row.toMutableList()
         })
+    }
+
+    fun withDefault(defaultValue: (Vec2) -> E): Matrix<E> = object: Matrix<E>(underlying) {
+        override fun getValue(x: Int, y: Int): E = if (inBounds(x, y)) get(x, y) else defaultValue(Vec2(x, y))
+        override fun getValue(pos: Vec2): E = getValue(pos.x, pos.y)
+
     }
 }
 
