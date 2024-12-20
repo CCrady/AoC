@@ -62,6 +62,13 @@ data class Vec2(val x: Int, val y: Int) {
     val sign: Vec2
         get() = Vec2(x.sign, y.sign)
 
+    val turnCW: Vec2
+        get() = Vec2(-y, x)
+    val turnCCW: Vec2
+        get() = Vec2(y, -x)
+    val reverse: Vec2
+        get() = Vec2(-x, -y)
+
     operator fun unaryPlus(): Vec2 = this
     operator fun unaryMinus(): Vec2 = Vec2(-x, -y)
     operator fun plus(other: Vec2): Vec2 = Vec2(x + other.x, y + other.y)
@@ -217,7 +224,6 @@ open class Matrix<E>(private val underlying: List<List<E>>) {
     fun withDefault(defaultValue: (Vec2) -> E): Matrix<E> = object: Matrix<E>(underlying) {
         override fun getValue(x: Int, y: Int): E = if (inBounds(x, y)) get(x, y) else defaultValue(Vec2(x, y))
         override fun getValue(pos: Vec2): E = getValue(pos.x, pos.y)
-
     }
 }
 
