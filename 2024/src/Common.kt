@@ -4,6 +4,7 @@ import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.sign
 
+
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any?)? = null, part2: ((T) -> Any?)? = null) {
     fun parseOrNull(file: File): T? = if (file.isFile) parse(file) else null
     val testData  = parseOrNull(File("test_input/$day.txt"))
@@ -17,6 +18,7 @@ fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any?)? = null, par
         if (inputData != null) println("part 2 real: ${ part2(inputData) }")
     }
 }
+
 
 fun numDigits(n: Number): Int = (log10(n.toDouble()) + 1.0).toInt()
 
@@ -48,6 +50,15 @@ fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.dr
 
 fun <E> List<E>.dropLastView(): List<E> = subList(0, size - 1)
 
+fun <E> List<E>.distinctUnorderedPairs(): Sequence<Pair<E, E>> = sequence {
+    for ((i, a) in this@distinctUnorderedPairs.withIndex()) {
+        for (j in (i+1)..<this@distinctUnorderedPairs.size) {
+            val b = this@distinctUnorderedPairs[j]
+            yield(Pair(a, b))
+        }
+    }
+}
+
 fun <T, R> Set<T>.flatSetMap(transform: (T) -> Collection<R>): Set<R> {
     return this.fold(mutableSetOf()) { acc, el ->
         acc.addAll(transform(el))
@@ -63,6 +74,7 @@ fun <T> MutableSet<T>.poppingIterator(): Iterator<T> = object: Iterator<T> {
         return popped
     }
 }
+
 
 data class Vec2(val x: Int, val y: Int) {
     // magnitude of the vector, using the manhattan distance
@@ -159,6 +171,7 @@ data class BigVec2(val x: BigInteger, val y: BigInteger) {
                 && other.x / commonXDivisor == other.y / commonYDivisor
     }
 }
+
 
 open class Matrix<E>(private val underlying: List<List<E>>) {
     val width: Int
@@ -260,6 +273,7 @@ class MutableMatrix<E>(private val underlying: List<MutableList<E>>): Matrix<E>(
     }
 }
 
+
 @JvmInline
 value class Multiset<E>(private val underlying: Map<E, BigInteger>) {
     val size: BigInteger
@@ -297,3 +311,32 @@ fun <E> Iterable<E>.toMultiset(): Multiset<E> = Multiset(this)
 fun <E> Set<E>.toMultiset(): Multiset<E> = Multiset(
     this.associateWith { BigInteger.ONE }.withDefault { BigInteger.ZERO }
 )
+
+
+@JvmInline
+value class UndirectedGraph<E>(private val nameToVertex: Map<E, Vertex<E>>) {
+    open class Vertex<E>(val name: E, open val neighbors: Set<Vertex<E>>)
+
+    val vertices: Collection<Vertex<E>>
+        get() = nameToVertex.values
+    operator fun get(name: E): Vertex<E>? = nameToVertex[name]
+    operator fun iterator(): Iterator<Vertex<E>> = vertices.iterator()
+
+    companion object {
+        fun <E> fromAssociations(assocs: Iterable<Pair<E, E>>): UndirectedGraph<E> {
+            class MutableVertex<E>(
+                name: E, override val neighbors: MutableSet<Vertex<E>>
+            ): Vertex<E>(name, neighbors)
+
+            val nameToVertex = mutableMapOf<E, MutableVertex<E>>()
+            fun getVertex(name: E) = nameToVertex.getOrPut(name) { MutableVertex(name, mutableSetOf()) }
+            for ((name1, name2) in assocs) {
+                val vertex1 = getVertex(name1)
+                val vertex2 = getVertex(name2)
+                vertex1.neighbors.add(vertex2)
+                vertex2.neighbors.add(vertex1)
+            }
+            return UndirectedGraph(nameToVertex)
+        }
+    }
+}
