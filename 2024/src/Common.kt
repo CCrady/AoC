@@ -5,15 +5,16 @@ import kotlin.math.log10
 import kotlin.math.sign
 
 fun <T> solve(day: String, parse: (File) -> T, part1: ((T) -> Any?)? = null, part2: ((T) -> Any?)? = null) {
-    val testData = parse(File("test_input/$day.txt"))
-    val inputData = parse(File("input/$day.txt"))
+    fun parseOrNull(file: File): T? = if (file.isFile) parse(file) else null
+    val testData  = parseOrNull(File("test_input/$day.txt"))
+    val inputData = parseOrNull(File("input/$day.txt"))
     if (part1 != null) {
-        println("part 1 test: ${ part1(testData) }")
-        println("part 1 real: ${ part1(inputData) }")
+        if (testData != null)  println("part 1 test: ${ part1(testData) }")
+        if (inputData != null) println("part 1 real: ${ part1(inputData) }")
     }
     if (part2 != null) {
-        println("part 2 test: ${ part2(testData) }")
-        println("part 2 real: ${ part2(inputData) }")
+        if (testData != null)  println("part 2 test: ${ part2(testData) }")
+        if (inputData != null) println("part 2 real: ${ part2(inputData) }")
     }
 }
 
@@ -31,6 +32,14 @@ fun countUp(start: Int = 0): Iterator<Int> = object: Iterator<Int> {
     var n = start
     override fun hasNext(): Boolean = true
     override fun next(): Int = n++
+}
+
+fun <T> repeatApply(times: Int, initial: T, f: (T) -> T): T {
+    var curr = initial
+    repeat(times) {
+        curr = f(curr)
+    }
+    return curr
 }
 
 fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.drop(1).map { group ->
