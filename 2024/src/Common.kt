@@ -48,6 +48,7 @@ fun Regex.matchToInts(input: String): List<Int> = matchEntire(input)!!.groups.dr
     group!!.value.toInt()
 }
 
+fun <E> List<E>.dropFirstView(): List<E> = subList(1, size)
 fun <E> List<E>.dropLastView(): List<E> = subList(0, size - 1)
 
 fun <E> List<E>.distinctUnorderedPairs(): Sequence<Pair<E, E>> = sequence {
