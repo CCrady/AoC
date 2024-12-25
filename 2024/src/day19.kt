@@ -1,9 +1,8 @@
 import java.io.File
 
-fun main() = solve("19", ::parse, ::part1)
+fun main() = solve("19", ::parse, ::part1, ::part2)
 
 private data class Input19(val towels: List<String>, val designs: List<String>)
-
 private fun parse(file: File): Input19 {
     val lines = file.readLines()
     val towels = lines.first().split(", ")
@@ -12,21 +11,25 @@ private fun parse(file: File): Input19 {
 }
 
 private fun part1(input: Input19): Int {
-    val (inputTowels, designs) = input
-    val optimizedTowels = optimizeTowels(inputTowels)
-    return designs.count { design -> isDesignPossible(design, optimizedTowels) }
-}
-
-private fun optimizeTowels(towels: List<String>): List<String> {
-    val towelSet = towels.toSet()
-    return towelSet.filter { towel ->
-        !isDesignPossible(towel, towelSet.minusElement(towel))
-    }.sortedByDescending(String::length)
-}
-
-fun isDesignPossible(design: String, towels: Collection<String>): Boolean {
-    if (design.isEmpty()) return true
-    return towels.any { towel ->
-        design.startsWith(towel) && isDesignPossible(design.removePrefix(towel), towels)
+    val (towels, designs) = input
+    val isDesignPossible = Memoize<String, Boolean> { design ->
+        if (design.isEmpty()) return@Memoize true
+        towels.any { towel ->
+            design.startsWith(towel) && this(design.removePrefix(towel))
+        }
     }
+    return designs.count(isDesignPossible)
+}
+
+private fun part2(input: Input19): Long {
+    val (towels, designs) = input
+    val numPossibleArrangements = Memoize<String, Long> { design ->
+        if (design.isEmpty()) return@Memoize 1
+        towels.sumOf { towel ->
+            if (design.startsWith(towel)) {
+                this(design.removePrefix(towel))
+            } else 0
+        }
+    }
+    return designs.sumOf(numPossibleArrangements)
 }
