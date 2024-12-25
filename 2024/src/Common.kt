@@ -76,6 +76,13 @@ fun <T> MutableSet<T>.poppingIterator(): Iterator<T> = object: Iterator<T> {
     }
 }
 
+// Wrapper for a function which performs memoization. The receiver on f is provided so that it can recurse in a memoized
+// way by calling `this()`. Be cautious when wrapping functions that have side effects.
+class Memoize<T, R>(private val f: Memoize<T, R>.(T) -> R): (T) -> R {
+    private val memo = mutableMapOf<T, R>()
+    override fun invoke(x: T): R = memo.getOrPut(x) { this.f(x) }
+}
+
 
 data class Vec2(val x: Int, val y: Int) {
     // magnitude of the vector, using the manhattan distance
