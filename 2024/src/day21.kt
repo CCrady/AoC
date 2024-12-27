@@ -1,40 +1,50 @@
 import java.io.File
 import kotlin.math.abs
 
-private fun main() = solve("21", ::parse, ::part1)
+private fun main() = solve("21", ::parse, parts(2), parts(25))
 
-private fun parse(file: File): List<String> = file.readLines()
+private fun parse(file: File): List<DoorCode> = file.readLines()
 
 // TODO: document & rename this to be more understandable
 
-private fun part1(input: List<String>): Int {
+private val directionalCodes = "0123456789A".toList().pairs().flatMap { (startButton, endButton) ->
+    doorButtonsToDirectionalCodes(startButton, endButton)
+}.toSet()
+private val directionalCodeToDirectionalCodes = directionalCodes.associateWith { directionalCode ->
+    directionalCode.mapSteps(::directionalButtonsToDirectionalCodes)
+}
+// This approach builds up a map of directional codes to the minimum number of manual keypresses required to input them
+// one level at a time, starting from the manual input (level 0) and finishing at the robot that controls the robot that
+// enters the door codes (level N).
+private fun parts(numRobotsTypingOnDirectionalKeypads: Int): (List<DoorCode>) -> Long = { input ->
+    val level0 = directionalCodes.associateWith { directionalCode -> directionalCode.size.toLong() }
+    val levelN = repeatApply(numRobotsTypingOnDirectionalKeypads, level0) { prevLevel ->
+        directionalCodeToDirectionalCodes.mapValues { (_, prevCodes) ->
+            prevCodes.sumOf { options ->
+                options.minOf { prevCode ->
+                    prevLevel.getValue(prevCode)
+                }
+            }
+        }
+    }
+
     val doorCodeNumbers = input.map { doorCode -> doorCode.removeSuffix("A").toInt() }
-    val finalDirectionalCodeLengths = input.map { doorCode ->
-        ("A" + doorCode).zipWithNext { startButton, endButton ->
-            val possibleResultSequences = doorButtonsToDirectionalCodes(startButton, endButton)
-            possibleResultSequences.minOf { directionalCode ->
-                shortestDirectionalCodeLength(2, directionalCode)
+    val finalCodeLengths = input.map { doorCode ->
+        doorCode.mapSteps { startDoorButton, endDoorButton ->
+            val possiblePaths = doorButtonsToDirectionalCodes(startDoorButton, endDoorButton)
+            possiblePaths.minOf { possiblePath ->
+                levelN.getValue(possiblePath)
             }
         }.sum()
     }
-    return (doorCodeNumbers zip finalDirectionalCodeLengths).sumOf { (codeNumber, finalLength) ->
+
+    (doorCodeNumbers zip finalCodeLengths).sumOf { (codeNumber, finalLength) ->
         codeNumber * finalLength
     }
 }
 
-private fun shortestDirectionalCodeLength(iterations: Int, directionalCode: List<DirectionalButton>): Int {
-    if (iterations == 0) return directionalCode.size
-
-    return (listOf(DirectionalButton.ACTIVATE) + directionalCode).zipWithNext { startButton, endButton ->
-        val possibleHigherCodes = directionalButtonsToDirectionalCodes(startButton, endButton)
-        possibleHigherCodes.minOf { higherCode ->
-            shortestDirectionalCodeLength(iterations - 1, higherCode)
-        }
-    }.sum()
-}
-
-
 private typealias DoorButton = Char
+private typealias DoorCode = String
 private enum class DirectionalButton {
     RIGHT,
     DOWN,
@@ -50,6 +60,14 @@ private enum class DirectionalButton {
         ACTIVATE -> "A"
     }
 }
+private typealias DirectionalCode = List<DirectionalButton>
+
+private fun <R> DoorCode.mapSteps(transform: (DoorButton, DoorButton) -> R): List<R> {
+    return ("A" + this).zipWithNext(transform)
+}
+private fun <R> DirectionalCode.mapSteps(transform: (DirectionalButton, DirectionalButton) -> R): List<R> {
+    return (listOf(DirectionalButton.ACTIVATE) + this).zipWithNext(transform)
+}
 
 // The buttonsToDirectionalCodes family of functions takes a starting and ending button and returns the set of shortest
 // sequences of directional button inputs that will take you from the start to the end position. This set contains
@@ -58,13 +76,13 @@ private enum class DirectionalButton {
 
 private fun doorButtonsToDirectionalCodes(
     startButton: DoorButton, endButton: DoorButton
-): Set<List<DirectionalButton>> {
+): Set<DirectionalCode> {
     return buttonsToDirectionalCodes(startButton, endButton, ::doorButtonPos, Vec2(0, 3))
 }
 
 private fun directionalButtonsToDirectionalCodes(
     startButton: DirectionalButton, endButton: DirectionalButton
-): Set<List<DirectionalButton>> {
+): Set<DirectionalCode> {
     return buttonsToDirectionalCodes(startButton, endButton, ::directionalButtonPos, Vec2(0, 0))
 }
 
@@ -72,7 +90,7 @@ private fun <T> buttonsToDirectionalCodes(
     startButton: T, endButton: T,
     buttonPos: (T) -> Vec2,
     gapPos: Vec2
-): Set<List<DirectionalButton>> {
+): Set<DirectionalCode> {
     val startPos = buttonPos(startButton)
     val endPos = buttonPos(endButton)
     val move = endPos - startPos
